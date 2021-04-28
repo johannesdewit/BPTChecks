@@ -22,7 +22,7 @@ import re
 # Match anything of the form: '[^123ab]' where it is not
 # at the start of a line.
 inline_note_match = re.compile(
-    r".+(\[\^[0-9A-Za-z]+\])", re.S
+    r"(?:[^\n]+?)(\[\^[0-9A-Za-z]+\]).*?", re.S
 )
 
 def parse_inline_notes(md: str) -> dict:
@@ -73,23 +73,32 @@ def parse_defined_notes(md: str) -> dict:
 def parse_md_files(inputpath):
 
     not_matching_notes = []
-    
+
     for file in tqdm(glob(path.join(inputpath, '*.md')), desc=f'Parsing markdown files'):
         with open(file, 'r') as f:
             mdf = f.read()
             # Run the two parsers
-            inline_notes = parse_inline_notes(mdf)
-            defined_notes = parse_defined_notes(mdf)
+            try:
+                inline_notes = parse_inline_notes(mdf)
+            except Exception as e:
+                not_matching_notes.append(str(file) + " " + str(e))
+                continue
+            try:
+                defined_notes = parse_defined_notes(mdf)
+            except Exception as e:
+                not_matching_notes.append(str(file) + " " + str(e))
+                continue
             f.close()
 
-        # compare the keys
+        # Compare the keys
+        # Here the script should in the future show which notes are missing or undefined.
         inline_keys = [k for k in inline_notes]
         defined_keys = defined_notes.keys()
         if len(inline_keys) != len(defined_keys):
             if len(inline_keys) > len(defined_keys):
-                not_matching_notes.append(str(file) + " Missing defined note.")
-            elif len(inline_keys) < len(defined_keys):
-                not_matching_notes.append(str(file) + " Missing inline note.")
+                not_matching_notes.append(str(file) + f" Missing {len(inline_keys) - len(defined_keys)} defined note(s). ")
+            if len(inline_keys) < len(defined_keys):
+                not_matching_notes.append(str(file) + f" Missing {len(defined_keys) - len(inline_keys)} inline note(s). ")
             continue
         else:
             continue
@@ -114,7 +123,7 @@ def main(argv):
     try:
         opts, args = getopt.getopt(argv,"hi:o:",["ifile="])
     except getopt.GetoptError:
-        print('FootnoteCheck.py -i <inputfile>')
+        print('FootnoteCheck.py -i <inputfolder>')
         sys.exit(2)
     for opt, arg in opts:
         if opt in ('-i', '--ipath'):
