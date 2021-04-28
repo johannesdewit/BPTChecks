@@ -115,7 +115,7 @@ def parse_md_files(inputpath):
 
 # Produce output file
 def write_output_file(list, header):
-    output_fname = 'Output_' + str(datetime.datetime.now()) + '.txt'
+    output_fname = 'Output_footnotes_' + str(datetime.datetime.now()) + '.txt'
     with open(output_fname, 'w') as f:
         f.write(str(header) + '\n')
         for line in sorted(list):
