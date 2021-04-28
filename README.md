@@ -1,6 +1,6 @@
 # BPTChecks
 
-A package with different scripts that check whether Brill plain text (BPT) markdown files are formatted correctly.
+An expanding package with different scripts that check whether Brill plain text (BPT) markdown files are formatted correctly.
 
 ## FootnoteCheck
 
