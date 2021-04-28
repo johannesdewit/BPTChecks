@@ -1,12 +1,11 @@
-# This script seeks to check whether multiple markdown files have any non-
+# This script seeks to check whether multiple bptmarkdown files have any non-
 # defined footnotes or footnotes that are defined but not actually appearing in
 # the text.
 #
 # Assumptions:
-#     - The files are using the regular footnote style
-#       see: https://www.markdownguide.org/extended-syntax/
+#     - The files are using the regular md footnote style
 #     - The footnotes are marked inline and defined on new lines at the end of
-#       the document or section.
+#       the document after a heading line beginning with '### Notes'
 
 import os
 from os import path
@@ -19,10 +18,9 @@ import re
 
 # Define parsing inline notes function.
 
-# Match anything of the form: '[^123ab]' where it is not
-# at the start of a line.
+# Match anything of the form: '[^123ab]'
 inline_note_match = re.compile(
-    r"(?:[^\n]+?)(\[\^[0-9A-Za-z]+\]).*?", re.S
+    r"[.\n]*?(\[\^[0-9A-Za-z]+\]).*?", re.S
 )
 
 def parse_inline_notes(md: str) -> dict:
@@ -77,16 +75,22 @@ def parse_md_files(inputpath):
     for file in tqdm(glob(path.join(inputpath, '*.md')), desc=f'Parsing markdown files'):
         with open(file, 'r') as f:
             mdf = f.read()
+
+            # Split the md file in to a 'content' and 'notes' section
+            mdf = mdf.split('### Notes', 1)
+            mdf_content = str(mdf[0])
+            mdf_notes = str(mdf[-1])
+
             # Run the two parsers
             try:
-                inline_notes = parse_inline_notes(mdf)
+                inline_notes = parse_inline_notes(mdf_content)
             except Exception as e:
-                not_matching_notes.append(str(file) + " " + str(e))
+                not_matching_notes.append(str(file) + ", " + str(e))
                 continue
             try:
-                defined_notes = parse_defined_notes(mdf)
+                defined_notes = parse_defined_notes(mdf_notes)
             except Exception as e:
-                not_matching_notes.append(str(file) + " " + str(e))
+                not_matching_notes.append(str(file) + ", " + str(e))
                 continue
             f.close()
 
@@ -96,9 +100,9 @@ def parse_md_files(inputpath):
         defined_keys = defined_notes.keys()
         if len(inline_keys) != len(defined_keys):
             if len(inline_keys) > len(defined_keys):
-                not_matching_notes.append(str(file) + f" Missing {len(inline_keys) - len(defined_keys)} defined note(s). ")
+                not_matching_notes.append(str(file) + f", Missing {len(inline_keys) - len(defined_keys)} defined note(s). ")
             if len(inline_keys) < len(defined_keys):
-                not_matching_notes.append(str(file) + f" Missing {len(defined_keys) - len(inline_keys)} inline note(s). ")
+                not_matching_notes.append(str(file) + f", Missing {len(defined_keys) - len(inline_keys)} inline note(s). ")
             continue
         else:
             continue
@@ -129,7 +133,7 @@ def main(argv):
         if opt in ('-i', '--ipath'):
             inputpath = arg
             output_list = parse_md_files(inputpath)
-            write_output_file(output_list, '------FOLLOWING FILES HAD MISSING NOTES------')
+            write_output_file(output_list, f'Following files in {inputpath} contain problems with footnotes:')
             print('Files checked for missing footnotes')
         else:
             print('Folder not specified correctly. Try "FootnoteCheck.py -i /path/to/folder"')
