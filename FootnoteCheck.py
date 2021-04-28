@@ -1,4 +1,4 @@
-# This script seeks to check whether multiple bptmarkdown files have any non-
+# This script seeks to check whether multiple Brill plain test (BPT) markdown files have any non-
 # defined footnotes or footnotes that are defined but not actually appearing in
 # the text.
 #
@@ -100,9 +100,13 @@ def parse_md_files(inputpath):
         defined_keys = defined_notes.keys()
         if len(inline_keys) != len(defined_keys):
             if len(inline_keys) > len(defined_keys):
-                not_matching_notes.append(str(file) + f", Missing {len(inline_keys) - len(defined_keys)} defined note(s). ")
+                # Checking which defined keys are missing:
+                missing_notes = set(inline_keys) - set(defined_keys)
+                not_matching_notes.append(str(file) + f", Missing {len(inline_keys) - len(defined_keys)} defined note(s)" + f", {missing_notes} is/are missing")
             if len(inline_keys) < len(defined_keys):
-                not_matching_notes.append(str(file) + f", Missing {len(defined_keys) - len(inline_keys)} inline note(s). ")
+                # Checking which inline keys are missing:
+                missing_notes = set(defined_keys) - set(inline_keys)
+                not_matching_notes.append(str(file) + f", Missing {len(defined_keys) - len(inline_keys)} inline note(s)" + f", {missing_notes} is/are missing")
             continue
         else:
             continue
