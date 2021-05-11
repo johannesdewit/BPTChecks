@@ -5,10 +5,8 @@
 # be missing, this script will not mention it.
 # Because the BPT has both 'T' and 'F' textparts. The above applies to both.
 #
-<<<<<<< HEAD
-=======
-
->>>>>>> edc974702af89b0f26bb98409a3a34441a02fef7
+# Known issues:
+#     - If textpart misses both a T or F the script doesn't identify it yet.
 
 import os
 from os import path
@@ -41,6 +39,57 @@ def parse_textparts(file, fail_list):
 
     return list(tp_t_headers), list(tp_f_headers), list(fail_list)
 
+def check_textparts(tp_list, fail_list, file_name):
+
+    alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q','r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
+
+    for tp_id in tp_list:
+        try:
+            if tp_id.startswith('T'):
+                tp_type = str('T')
+            elif tp_id.startswith('F'):
+                tp_type = str('F')
+        except IndexError:
+            continue
+        tp_id = tp_id[1:]
+
+        if tp_id == '1' or tp_id == '1a':
+            continue
+        else:
+            tp_id_re = re.findall(r'(\d+)([a-z]*)', tp_id)[0]
+            tp_id_dig = int(tp_id_re[0])
+            tp_id_let = tp_id_re[1]
+            # If tp_id_let is a, continue
+            if tp_id_let == 'a':
+                continue
+            if not tp_id_let == '':
+                tp_id_let_i = alphabet.index(tp_id_let)
+                while tp_id_let_i > -1:
+                    tp_id_let_alpha = alphabet[tp_id_let_i]
+                    tp_full_id = tp_type + str(tp_id_dig) + tp_id_let_alpha
+                    if not tp_full_id in tp_list:
+                        fail_line = str(file_name) + f', textpart(s) {tp_full_id} missing'
+                        if not fail_line in fail_list:
+                            fail_list.append(fail_line)
+                    tp_id_let_i -= 1
+            else:
+                while tp_id_dig > 0:
+                    tp_full_id = tp_type + str(tp_id_dig)
+                    elem_in_list = False
+                    for elem in tp_list:
+                        if elem.startswith(f'{tp_full_id}'):
+                            elem_in_list = True
+                        else:
+                            continue
+                    if not elem_in_list:
+                        fail_line = str(file_name) + f', textpart(s) {tp_full_id} missing'
+                        if not fail_line in fail_list:
+                            fail_list.append(fail_line)
+                    tp_id_dig -= 1
+                continue
+            continue
+    return list(fail_list)
+
 def parse_md_files(inputpath):
 
     incorrect_textparts = []
@@ -51,49 +100,13 @@ def parse_md_files(inputpath):
 
             tp_t_headers, tp_f_headers, incorrect_textparts = parse_textparts(mdf, incorrect_textparts)
 
-            alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q','r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
+            incorrect_textparts.extend(check_textparts(tp_t_headers, incorrect_textparts, file))
+            incorrect_textparts.extend(check_textparts(tp_f_headers, incorrect_textparts, file))
 
-            # For every element of tp_headers check whether all other previous tp_id's are there
-            for tp_f_id in tp_f_headers:
-                tp_id = tp_f_id[1:]
+            # For some reason some lines are added multiple times. Until this problem is resolved the
+            # following line is added to ensure a readable list.
+            incorrect_textparts = list(set(incorrect_textparts))
 
-                # Skip '1' and '1a', these are always correct.
-                if tp_id == '1' or tp_id == '1a':
-                    continue
-                else:
-                    # If tp_id does not only contain digits it contains letters
-                    tp_id_re = re.findall(r'(\d+)([a-z]*)', tp_id)[0]
-                    tp_id_dig = int(tp_id_re[0])
-                    tp_id_let = tp_id_re[1]
-
-                    # If tp_id_let is a, continue
-                    if tp_id_let == 'a':
-                        continue
-                    if not tp_id_let == '':
-                        tp_id_let_i = alphabet.index(tp_id_let)
-                        while tp_id_let_i > -1:
-                            tp_id_let_alpha = alphabet[tp_id_let_i]
-                            tp_full_id = 'F' + str(tp_id_dig) + tp_id_let_alpha
-                            if not tp_full_id in tp_f_headers:
-                                incorrect_textparts.append(str(file) + f', textpart(s) {tp_full_id} missing')
-                            tp_id_let_i -= 1
-                    else:
-                        tp_id = int(tp_id)
-                        while tp_id_dig > 0:
-                            tp_full_id = 'F' + str(tp_id_dig)
-                            elem_in_list = False
-                            for elem in tp_f_headers:
-                                if elem.startswith(f'F{tp_id_dig}'):
-                                    elem_in_list = True
-                                else:
-                                    continue
-                            if not elem_in_list:
-                                fail_line = str(file) + f', textpart(s) {tp_full_id} missing'
-                                if not fail_line in incorrect_textparts:
-                                    incorrect_textparts.append(fail_line)
-                            tp_id_dig -= 1
-                        continue
-                    continue
             continue
 
     return list(incorrect_textparts)
