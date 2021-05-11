@@ -7,6 +7,9 @@
 #
 # Known issues:
 #     - If textpart misses both a T or F the script doesn't identify it yet.
+#     - Large textparts may have double letters after the textpart numbers in
+#       order to identify the textpart ('aa' after 'z'). This has not been
+#       resolved yet.
 
 import os
 from os import path
