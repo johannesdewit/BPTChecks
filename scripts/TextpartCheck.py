@@ -5,6 +5,10 @@
 # be missing, this script will not mention it.
 # Because the BPT has both 'T' and 'F' textparts. The above applies to both.
 #
+<<<<<<< HEAD
+=======
+
+>>>>>>> edc974702af89b0f26bb98409a3a34441a02fef7
 
 import os
 from os import path
